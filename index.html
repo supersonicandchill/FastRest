@@ -1,564 +1,802 @@
+
 <!DOCTYPE html>
-<!--
-  ╔══════════════════════════════════════════════════════╗
-  ║         FULL MINISTRY OS — Pastoral Dashboard        ║
-  ╠══════════════════════════════════════════════════════╣
-  ║  HOW TO USE:                                         ║
-  ║  1. Place all files (index.html, style.css,          ║
-  ║     script.js, manifest.json, sw.js, bible.json)     ║
-  ║     in the SAME folder.                              ║
-  ║  2. Open via a local server (not file://) for PWA:   ║
-  ║     → npx serve .  OR  python -m http.server 8080    ║
-  ║  3. Visit http://localhost:8080 in Chrome/Safari      ║
-  ║  4. To install: click the Install button or use      ║
-  ║     browser's "Add to Home Screen" option.           ║
-  ║  5. Export your data regularly from Settings!        ║
-  ║                                                      ║
-  ║  TO EXPAND THE BIBLE: Add more books/chapters to     ║
-  ║  bible.json following the existing format.           ║
-  ╚══════════════════════════════════════════════════════╝
--->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1e3a5f" />
-  <meta name="description" content="Full Ministry OS — Offline-first pastoral dashboard" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Full Ministry OS</title>
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./style.css" />
+  <title>FastRest Tracker</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Font: DM Mono for headers, DM Sans for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+    // ── Tailwind config ──────────────────────────────────────────────────────
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            green:  { DEFAULT: '#22c55e', dark: '#16a34a' },
+            bg:     '#0d1117',
+            surface:'#161b22',
+            border: '#30363d',
+            muted:  '#8b949e',
+          },
+          fontFamily: {
+            mono: ['"DM Mono"', 'monospace'],
+            sans: ['"DM Sans"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ── Base ────────────────────────────────────────────────────── */
+    * { box-sizing: border-box; }
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main { flex: 1; }
+
+    /* ── Star rating ─────────────────────────────────────────────── */
+    .star { cursor: pointer; transition: color .15s; font-size: 1.5rem; }
+    .star.filled  { color: #22c55e; }
+    .star.empty   { color: #30363d; }
+
+    /* ── Table scrollable on mobile ──────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { background: #161b22; color: #8b949e; font-weight: 500; text-align: left; padding: .6rem .75rem; border-bottom: 1px solid #30363d; white-space: nowrap; }
+    td { padding: .55rem .75rem; border-bottom: 1px solid #21262d; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1c2128; }
+
+    /* ── Tab active ─────────────────────────────────────────────── */
+    .tab-btn { transition: background .15s, color .15s, border-color .15s; }
+    .tab-btn.active { background: #22c55e !important; color: #0d1117 !important; border-color: #22c55e !important; font-weight: 600; }
+
+    /* ── Timer card pulse ────────────────────────────────────────── */
+    @keyframes pulse-border { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.4); } 50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } }
+    .timer-card { animation: pulse-border 2.5s infinite; }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1117; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+  </style>
 </head>
 <body>
 
-<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
-<aside id="sidebar">
-  <div id="sidebar-header">
-    <h1>✝ Ministry OS</h1>
-    <p>Pastoral Dashboard</p>
-  </div>
-  <nav>
-    <div class="nav-item active" data-section="dashboard"><span class="icon">🏠</span> Dashboard</div>
-    <div class="nav-item" data-section="bible"><span class="icon">📖</span> Bible Study</div>
-    <div class="nav-item" data-section="sermon"><span class="icon">🎙️</span> Sermon Builder</div>
-    <div class="nav-item" data-section="prayer"><span class="icon">🙏</span> Prayer Journal</div>
-    <div class="nav-item" data-section="care"><span class="icon">🐑</span> Shepherd's Care</div>
-    <div class="nav-item" data-section="worship"><span class="icon">🎵</span> Worship</div>
-    <div class="nav-item" data-section="discipleship"><span class="icon">🌱</span> Discipleship</div>
-    <div class="nav-item" data-section="notes"><span class="icon">📝</span> Notes</div>
-    <div class="nav-item" data-section="settings"><span class="icon">⚙️</span> Settings</div>
-  </nav>
-  <div id="sidebar-footer">Full Ministry OS v1.0<br>All data stored locally</div>
-</aside>
+<!-- ═══════════════════════  HEADER  ══════════════════════════════════ -->
+<header class="sticky top-0 z-50 border-b border-[#30363d]" style="background:#0d1117ee;backdrop-filter:blur(10px);">
+  <div class="max-w-2xl mx-auto px-4 py-3 flex flex-col gap-3">
 
-<!-- ═══════════════════ MOBILE OVERLAY ═══════════════════ -->
-<div id="mobile-overlay"></div>
-
-<!-- ═══════════════════ MAIN ═══════════════════ -->
-<main id="main">
-
-  <!-- TOPBAR -->
-  <div id="topbar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button id="hamburger">☰</button>
-      <h2 id="topbar-title">🏠 Dashboard</h2>
-    </div>
-    <div id="topbar-actions">
-      <button id="installBtn" class="btn btn-gold btn-sm" style="display:none">📲 Install App</button>
-    </div>
-  </div>
-
-  <!-- ══════════ DASHBOARD ══════════ -->
-  <section class="section active" id="sec-dashboard">
-    <div class="dash-verse">
-      <div class="verse-date" id="dash-date"></div>
-      <div class="verse-text" id="dash-verse-text"></div>
-      <div class="verse-ref" id="dash-verse-ref"></div>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat-card" data-section="sermon">
-        <div class="stat-num" id="stat-sermons">0</div>
-        <div class="stat-label">Sermons</div>
-      </div>
-      <div class="stat-card" data-section="prayer" style="border-top-color:#c9a84c">
-        <div class="stat-num" id="stat-prayers">0</div>
-        <div class="stat-label">Open Prayers</div>
-      </div>
-      <div class="stat-card" data-section="care" style="border-top-color:#27ae60">
-        <div class="stat-num" id="stat-members">0</div>
-        <div class="stat-label">Members</div>
-      </div>
-      <div class="stat-card" data-section="discipleship" style="border-top-color:#8e44ad">
-        <div class="stat-num" id="stat-disciples">0</div>
-        <div class="stat-label">Disciples</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">⚡ Quick Access</div>
-      <div class="quicklinks">
-        <div class="quicklink" data-section="bible"><span class="ql-icon">📖</span><span class="ql-label">Bible</span></div>
-        <div class="quicklink" data-section="sermon"><span class="ql-icon">🎙️</span><span class="ql-label">Sermon</span></div>
-        <div class="quicklink" data-section="prayer"><span class="ql-icon">🙏</span><span class="ql-label">Prayer</span></div>
-        <div class="quicklink" data-section="care"><span class="ql-icon">🐑</span><span class="ql-label">Members</span></div>
-        <div class="quicklink" data-section="worship"><span class="ql-icon">🎵</span><span class="ql-label">Worship</span></div>
-        <div class="quicklink" data-section="discipleship"><span class="ql-icon">🌱</span><span class="ql-label">Disciples</span></div>
-        <div class="quicklink" data-section="notes"><span class="ql-icon">📝</span><span class="ql-label">Notes</span></div>
-        <div class="quicklink" data-section="settings"><span class="ql-icon">⚙️</span><span class="ql-label">Settings</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════ BIBLE STUDY ══════════ -->
-  <section class="section" id="sec-bible">
-    <div class="card">
-      <div class="bible-controls">
-        <select id="bible-book"></select>
-        <select id="bible-chapter"></select>
-        <input type="search" id="bible-search" placeholder="Search scripture..." style="flex:2;min-width:160px" />
-        <button class="btn btn-primary" id="bible-search-btn">Search</button>
-      </div>
-      <div id="bible-verse-actions" style="display:none;gap:8px;margin-bottom:12px">
-        <button class="btn btn-gold btn-sm" id="btn-highlight">✨ Highlight</button>
-        <button class="btn btn-primary btn-sm" id="btn-verse-note">📝 Note</button>
-      </div>
-      <div class="bible-reader" id="bible-reader"></div>
-      <div id="search-results" class="search-results"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">📅 30-Day Reading Tracker</div>
-      <p class="text-muted text-sm mb-16">Tap a day to mark it complete. Today has a gold border.</p>
-      <div class="reading-grid" id="reading-grid"></div>
-    </div>
-  </section>
-
-  <!-- ══════════ SERMON BUILDER ══════════ -->
-  <section class="section" id="sec-sermon">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-      <div>
-        <h3 style="font-size:1rem;font-weight:700">My Sermons</h3>
-        <p class="text-muted text-sm">Click any sermon to edit the outline</p>
-      </div>
-      <button class="btn btn-primary" id="btn-new-sermon">+ New Sermon</button>
-    </div>
-    <div id="sermon-list"></div>
-
-    <div class="card" style="margin-top:20px">
-      <div class="card-title">⏱️ Preaching Timer</div>
-      <div class="timer-display" id="timer-display">00:00</div>
-      <div style="display:flex;justify-content:center;gap:10px;margin-top:14px">
-        <button class="btn btn-primary" id="btn-timer-start">▶ Start</button>
-        <button class="btn btn-ghost" id="btn-timer-reset">↺ Reset</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════ PRAYER JOURNAL ══════════ -->
-  <section class="section" id="sec-prayer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3 style="font-size:1rem;font-weight:700">Prayer Journal</h3>
-      <button class="btn btn-primary" id="btn-new-prayer">+ New Prayer</button>
-    </div>
-    <div class="prayer-categories">
-      <div class="cat-badge active" data-cat="All">All</div>
-      <div class="cat-badge" data-cat="Personal">Personal</div>
-      <div class="cat-badge" data-cat="Congregation">Congregation</div>
-      <div class="cat-badge" data-cat="Family">Family</div>
-      <div class="cat-badge" data-cat="Mission">Mission</div>
-      <div class="cat-badge" data-cat="Answered">✓ Answered</div>
-    </div>
-    <div id="prayer-list"></div>
-
-    <div class="card">
-      <div class="card-title">🌟 Gratitude Log</div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="gratitude-input" placeholder="What are you thankful for today?" style="flex:1" />
-        <button class="btn btn-gold" id="btn-add-gratitude">Add</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════ SHEPHERD'S CARE ══════════ -->
-  <section class="section" id="sec-care">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3 style="font-size:1rem;font-weight:700">Member Directory</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" id="btn-import-csv">📥 CSV Import</button>
-        <input type="file" id="csv-input" accept=".csv" style="display:none" />
-        <button class="btn btn-primary" id="btn-new-member">+ Add Member</button>
-      </div>
-    </div>
-    <input type="search" id="member-search" placeholder="Search members..." class="mb-16" />
-    <div class="member-grid" id="member-grid"></div>
-
-    <div class="card" style="margin-top:20px">
-      <div class="card-title">📋 Recent Visits</div>
-      <div id="visit-log"></div>
-    </div>
-  </section>
-
-  <!-- ══════════ WORSHIP ══════════ -->
-  <section class="section" id="sec-worship">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3 style="font-size:1rem;font-weight:700">Song Library</h3>
-      <button class="btn btn-primary" id="btn-new-song">+ Add Song</button>
-    </div>
-    <div id="song-library" style="margin-bottom:20px"></div>
-
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="card-title" style="margin-bottom:0">🎼 Current Setlist</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-gold btn-sm" id="btn-save-setlist">💾 Save</button>
-          <button class="btn btn-ghost btn-sm" id="btn-clear-setlist">Clear</button>
-        </div>
-      </div>
-      <div id="current-setlist"></div>
-    </div>
-  </section>
-
-  <!-- ══════════ DISCIPLESHIP ══════════ -->
-  <section class="section" id="sec-discipleship">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3 style="font-size:1rem;font-weight:700">One-on-One Discipleship</h3>
-      <button class="btn btn-primary" id="btn-new-disciple">+ Add Relationship</button>
-    </div>
-    <div id="disciple-list" style="margin-bottom:20px"></div>
-
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="card-title" style="margin-bottom:0">📢 Outreach Log</div>
-        <button class="btn btn-primary btn-sm" id="btn-log-outreach">+ Log Conversation</button>
-      </div>
-      <div id="outreach-log"></div>
-    </div>
-  </section>
-
-  <!-- ══════════ NOTES ══════════ -->
-  <section class="section" id="sec-notes">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <h3 style="font-size:1rem;font-weight:700">Knowledge Base</h3>
-      <button class="btn btn-primary" id="btn-new-note">+ New Note</button>
-    </div>
-    <input type="search" id="note-search" placeholder="Search notes..." class="mb-16" />
-    <div class="notes-layout">
-      <div class="notes-sidebar" id="note-list"></div>
-      <div class="notes-editor" id="note-editor-area" style="display:none">
-        <input type="text" id="note-title-input" placeholder="Note title..." style="font-size:1.1rem;font-weight:700" />
-        <input type="text" id="note-tag-input" placeholder="Tag (e.g. sermon, prayer, scripture)..." />
-        <textarea id="note-body" placeholder="Start writing your note..."></textarea>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn btn-danger btn-sm" id="btn-delete-note">🗑 Delete</button>
-          <button class="btn btn-primary" id="btn-save-note">💾 Save</button>
-        </div>
-      </div>
-      <div id="note-empty-msg" style="display:flex;align-items:center;justify-content:center;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text2);font-size:0.9rem;text-align:center;padding:40px">
-        Select a note or create a new one
-      </div>
-    </div>
-  </section>
-
-  <!-- ══════════ SETTINGS ══════════ -->
-  <section class="section" id="sec-settings">
-    <div class="disclaimer-box">
-      <strong>⚠️ Data Storage Notice</strong><br>
-      All data is stored locally in your browser only. Export your data regularly to a safe location.
-      This app does not use cloud storage or backups. You are responsible for keeping your own backups.
-      Importing a file will replace all current data.
-    </div>
-
-    <div class="card">
-      <div class="card-title">📤 Data Management</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-        <button class="btn btn-primary" id="btn-export">⬇ Export All Data</button>
-        <button class="btn btn-gold" id="btn-import">⬆ Import Backup</button>
-        <input type="file" id="import-input" accept=".json" style="display:none" />
-      </div>
-      <p class="text-sm text-muted">Export downloads a JSON file with all your sermons, prayers, members, notes, and settings.</p>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🎨 Appearance</div>
-      <div class="toggle-row">
-        <span>Dark Mode</span>
-        <label class="toggle">
-          <input type="checkbox" id="darkToggle" />
-          <span class="toggle-slider"></span>
+    <!-- Title row + export/import buttons -->
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <h1 class="font-mono text-lg font-medium tracking-tight text-white">
+        ⚡ FastRest<span class="text-[#22c55e]">Tracker</span>
+      </h1>
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="exportData()"
+          class="text-xs px-3 py-1.5 rounded-lg border border-[#30363d] text-[#8b949e] hover:text-white hover:border-[#8b949e] transition-colors">
+          ↓ Export
+        </button>
+        <label class="text-xs px-3 py-1.5 rounded-lg border border-[#30363d] text-[#8b949e] hover:text-white hover:border-[#8b949e] transition-colors cursor-pointer">
+          ↑ Import
+          <input type="file" accept=".json" class="hidden" onchange="importData(event)" />
         </label>
+        <button onclick="clearAllData()"
+          class="text-xs px-3 py-1.5 rounded-lg border border-red-800 text-red-500 hover:bg-red-900/30 transition-colors">
+          🗑 Clear
+        </button>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">📲 Install App</div>
-      <p class="text-sm text-muted mb-16">Install Ministry OS on your device for offline access and a native app experience.</p>
-      <button class="btn btn-gold" id="installBtn2" onclick="document.getElementById('installBtn').click()">📲 Install to Device</button>
+    <!-- Tab switcher -->
+    <div class="flex gap-2">
+      <button id="tab-fasting" onclick="switchTab('fasting')"
+        class="tab-btn active flex-1 py-2 rounded-xl border border-[#30363d] text-sm font-medium text-[#8b949e]">
+        🕐 Fasting
+      </button>
+      <button id="tab-sleep" onclick="switchTab('sleep')"
+        class="tab-btn flex-1 py-2 rounded-xl border border-[#30363d] text-sm font-medium text-[#8b949e]">
+        🌙 Sleep
+      </button>
     </div>
 
-    <div class="card" style="border:1px solid rgba(192,57,43,0.3)">
-      <div class="card-title" style="color:var(--danger)">⚠️ Danger Zone</div>
-      <p class="text-sm text-muted mb-16">Permanently delete all data. This cannot be undone. Export first!</p>
-      <button class="btn btn-danger" id="btn-reset">🗑 Reset All Data</button>
+  </div>
+</header>
+
+
+<!-- ═══════════════════════  MAIN  ════════════════════════════════════ -->
+<main class="max-w-2xl mx-auto w-full px-4 py-5 pb-24">
+
+  <!-- ─────────────────────  FASTING TAB  ──────────────────────────── -->
+  <section id="pane-fasting">
+
+    <!-- Active fast card -->
+    <div id="active-fast-card" class="hidden mb-5">
+      <div class="timer-card rounded-2xl border border-[#22c55e]/50 bg-[#161b22] p-5">
+        <p class="text-xs text-[#8b949e] uppercase tracking-wider mb-1 font-mono">Fast in progress</p>
+        <p id="active-fast-type" class="text-white font-semibold text-lg mb-3"></p>
+        <div class="flex gap-6 items-end">
+          <div>
+            <p class="text-xs text-[#8b949e] mb-0.5">Time remaining</p>
+            <p id="countdown-display" class="font-mono text-3xl font-medium text-[#22c55e]">--:--</p>
+          </div>
+          <div>
+            <p class="text-xs text-[#8b949e] mb-0.5">Elapsed</p>
+            <p id="elapsed-display" class="font-mono text-3xl font-medium text-white">--:--</p>
+          </div>
+        </div>
+        <p id="fast-progress-text" class="text-xs text-[#8b949e] mt-3"></p>
+      </div>
     </div>
-  </section>
+
+    <!-- Fasting controls card -->
+    <div class="rounded-2xl border border-[#30363d] bg-[#161b22] p-5 mb-5">
+      <p class="text-xs text-[#8b949e] uppercase tracking-wider mb-3 font-mono">Start a fast</p>
+
+      <!-- Type selector -->
+      <label class="block text-sm text-[#8b949e] mb-1">Fasting type</label>
+      <select id="fast-type" onchange="onFastTypeChange()"
+        class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-3 py-2.5 text-white text-sm mb-3 focus:outline-none focus:border-[#22c55e]">
+        <option value="16">16:8 (16 hr fast)</option>
+        <option value="18">18:6 (18 hr fast)</option>
+        <option value="20">20:4 (20 hr fast)</option>
+        <option value="23">OMAD — 23:1 (23 hr fast)</option>
+        <option value="24">24 Hour</option>
+        <option value="36">36 Hour</option>
+        <option value="48">48 Hour</option>
+        <option value="water">Water Fast (72 hr)</option>
+        <option value="custom">Custom…</option>
+      </select>
+
+      <!-- Custom hours input (hidden by default) -->
+      <div id="custom-hours-wrap" class="hidden mb-3">
+        <label class="block text-sm text-[#8b949e] mb-1">Custom duration (hours)</label>
+        <input id="custom-hours" type="number" min="1" max="240" placeholder="e.g. 14"
+          class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-3 mt-1">
+        <button id="btn-start" onclick="startFast()"
+          class="flex-1 py-3 rounded-xl bg-[#22c55e] text-[#0d1117] font-semibold text-sm hover:bg-[#16a34a] transition-colors">
+          ▶ Start Fasting Now
+        </button>
+        <button id="btn-end" onclick="endFast()"
+          class="flex-1 py-3 rounded-xl bg-[#161b22] border border-red-700 text-red-400 font-semibold text-sm hover:bg-red-900/30 transition-colors hidden">
+          ■ End Fasting Now
+        </button>
+      </div>
+
+      <!-- Status micro-copy -->
+      <p id="fast-status-msg" class="text-xs text-[#8b949e] mt-3 text-center"></p>
+    </div>
+
+    <!-- Fasting history -->
+    <div class="rounded-2xl border border-[#30363d] bg-[#161b22] p-5">
+      <p class="text-xs text-[#8b949e] uppercase tracking-wider mb-3 font-mono">History</p>
+      <div id="fast-history-empty" class="text-sm text-[#8b949e] text-center py-6">No fasts logged yet. Start your first fast above!</div>
+      <div id="fast-history-wrap" class="table-wrap hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Duration</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="fast-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </section><!-- /fasting pane -->
+
+
+  <!-- ─────────────────────  SLEEP TAB  ────────────────────────────── -->
+  <section id="pane-sleep" class="hidden">
+
+    <!-- Sleep logging form -->
+    <div class="rounded-2xl border border-[#30363d] bg-[#161b22] p-5 mb-5">
+      <p class="text-xs text-[#8b949e] uppercase tracking-wider mb-3 font-mono">Log sleep</p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-sm text-[#8b949e] mb-1">Bedtime</label>
+          <input id="sleep-bedtime" type="datetime-local" onchange="calcSleepDuration()"
+            class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+        </div>
+        <div>
+          <label class="block text-sm text-[#8b949e] mb-1">Wake time</label>
+          <input id="sleep-waketime" type="datetime-local" onchange="calcSleepDuration()"
+            class="w-full bg-[#0d1117] border border-[#30363d] rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+        </div>
+      </div>
+
+      <!-- Auto-calculated duration preview -->
+      <div id="sleep-duration-preview" class="hidden mb-3 py-2 px-4 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] text-sm font-mono">
+        ⏱ Duration: <span id="sleep-duration-val">—</span> hours
+      </div>
+
+      <!-- Star quality picker -->
+      <label class="block text-sm text-[#8b949e] mb-2">Quality (optional)</label>
+      <div id="star-row" class="flex gap-1 mb-4" aria-label="Sleep quality rating">
+        <span class="star empty" data-val="1" onclick="setStar(1)">★</span>
+        <span class="star empty" data-val="2" onclick="setStar(2)">★</span>
+        <span class="star empty" data-val="3" onclick="setStar(3)">★</span>
+        <span class="star empty" data-val="4" onclick="setStar(4)">★</span>
+        <span class="star empty" data-val="5" onclick="setStar(5)">★</span>
+      </div>
+      <input type="hidden" id="sleep-quality" value="0" />
+
+      <button onclick="saveSleep()"
+        class="w-full py-3 rounded-xl bg-[#22c55e] text-[#0d1117] font-semibold text-sm hover:bg-[#16a34a] transition-colors">
+        💾 Save Sleep Log
+      </button>
+      <p id="sleep-save-msg" class="text-xs text-center mt-2 text-[#22c55e] hidden">✓ Sleep log saved!</p>
+    </div>
+
+    <!-- Sleep history table -->
+    <div class="rounded-2xl border border-[#30363d] bg-[#161b22] p-5 mb-5">
+      <p class="text-xs text-[#8b949e] uppercase tracking-wider mb-3 font-mono">History</p>
+      <div id="sleep-history-empty" class="text-sm text-[#8b949e] text-center py-6">No sleep logs yet. Add your first entry above!</div>
+      <div id="sleep-history-wrap" class="table-wrap hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Bedtime</th>
+              <th>Wake</th>
+              <th>Hrs</th>
+              <th>⭐</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sleep-history-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sleep trend chart -->
+    <div class="rounded-2xl border border-[#30363d] bg-[#161b22] p-5">
+      <p class="text-xs text-[#8b949e] uppercase tracking-wider mb-1 font-mono">30-day trend</p>
+      <p class="text-xs text-[#8b949e] mb-4">Hours slept per night</p>
+      <div id="chart-empty" class="text-sm text-[#8b949e] text-center py-6 hidden">Log at least 2 sleep entries to see the chart.</div>
+      <canvas id="sleep-chart" height="180"></canvas>
+    </div>
+
+  </section><!-- /sleep pane -->
 
 </main>
 
-<!-- ═══════════════════ MODALS ═══════════════════ -->
 
-<!-- Welcome / Disclaimer -->
-<div class="modal-overlay" id="welcomeModal">
-  <div class="modal">
-    <h3>✝ Welcome to Full Ministry OS</h3>
-    <p style="font-size:0.9rem;line-height:1.7;margin-bottom:14px">Your complete offline-first pastoral dashboard — Bible study, sermon building, prayer tracking, member care, worship planning, and more — all in one place.</p>
-    <div class="disclaimer-box">
-      <strong>⚠️ Important:</strong> All data is stored locally in your browser only. Export your data regularly to a safe location. This app does not use cloud storage or backups. You are responsible for keeping your own backups. Importing a file will replace all current data.
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal('welcomeModal')">Get Started ✝</button>
+<!-- ═══════════════════════  FOOTER  ══════════════════════════════════ -->
+<footer class="max-w-2xl mx-auto w-full px-4 pb-5 fixed bottom-0 left-0 right-0 pointer-events-none">
+  <div class="pointer-events-auto mx-auto max-w-2xl">
+    <div class="rounded-xl border border-[#30363d] bg-[#161b22]/95 backdrop-blur px-4 py-2.5 text-xs text-[#6e7681] leading-relaxed">
+      ⚠️ Data is saved <strong class="text-[#8b949e]">ONLY</strong> in your browser (localStorage). Export regularly to your desktop or you will lose everything if you clear browser data or switch devices. This is <strong class="text-[#8b949e]">NOT medical advice</strong> — just a simple personal tracker.
     </div>
   </div>
-</div>
+</footer>
 
-<!-- Verse Note -->
-<div class="modal-overlay" id="verseNoteModal">
-  <div class="modal">
-    <h3>📝 Verse Note — <span id="vn-ref"></span></h3>
-    <div class="form-group">
-      <textarea id="vn-text" placeholder="Your thoughts on this verse..." rows="6"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('verseNoteModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-vn">Save Note</button>
-    </div>
-  </div>
-</div>
 
-<!-- Sermon Modal -->
-<div class="modal-overlay" id="sermonModal">
-  <div class="modal" style="max-width:680px">
-    <h3>🎙️ Sermon Editor</h3>
-    <div class="card-grid">
-      <div class="form-group">
-        <label>Title *</label>
-        <input type="text" id="sermon-form-title" placeholder="Sermon title..." />
-      </div>
-      <div class="form-group">
-        <label>Series</label>
-        <input type="text" id="sermon-form-series" placeholder="Series name..." />
-      </div>
-      <div class="form-group">
-        <label>Scripture</label>
-        <input type="text" id="sermon-form-scripture" placeholder="e.g. John 3:16" />
-      </div>
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="sermon-form-date" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Manuscript / Notes</label>
-      <textarea id="sermon-form-notes" placeholder="Full sermon text or notes..." rows="4"></textarea>
-    </div>
-    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-      <label style="font-size:0.82rem;font-weight:600;color:var(--text2)">Outline</label>
-      <button class="btn btn-ghost btn-sm" id="btn-add-outline">+ Add Point</button>
-    </div>
-    <div id="sermon-outline-items" style="min-height:60px"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('sermonModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-sermon">💾 Save Sermon</button>
-    </div>
-  </div>
-</div>
+<!-- ═══════════════════════  JAVASCRIPT  ══════════════════════════════ -->
+<script>
+// ──────────────────────────────────────────────────────────────────────────
+//  STATE
+// ──────────────────────────────────────────────────────────────────────────
+let fastingLogs = JSON.parse(localStorage.getItem('fastingLogs') || '[]');
+let sleepLogs   = JSON.parse(localStorage.getItem('sleepLogs')   || '[]');
+let activeFast  = JSON.parse(localStorage.getItem('activeFast')  || 'null');
+let sleepQualityVal = 0;
+let countdownInterval = null;
+let sleepChart = null;
 
-<!-- Prayer Modal -->
-<div class="modal-overlay" id="prayerModal">
-  <div class="modal">
-    <h3>🙏 Add Prayer Request</h3>
-    <div class="form-group">
-      <label>Title / Name *</label>
-      <input type="text" id="prayer-title" placeholder="Person or topic..." />
-    </div>
-    <div class="form-group">
-      <label>Request</label>
-      <textarea id="prayer-request" placeholder="Details of the prayer request..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>Category</label>
-      <select id="prayer-category">
-        <option>Personal</option>
-        <option>Congregation</option>
-        <option>Family</option>
-        <option>Mission</option>
-        <option>Leadership</option>
-        <option>Healing</option>
-        <option>Finance</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Follow-up Date</label>
-      <input type="date" id="prayer-followup" />
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('prayerModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-prayer">🙏 Add Prayer</button>
-    </div>
-  </div>
-</div>
 
-<!-- Member Modal -->
-<div class="modal-overlay" id="memberModal">
-  <div class="modal">
-    <h3>🐑 Add Member</h3>
-    <div class="form-group">
-      <label>Full Name *</label>
-      <input type="text" id="member-name" placeholder="Full name..." />
-    </div>
-    <div class="card-grid">
-      <div class="form-group">
-        <label>Phone</label>
-        <input type="text" id="member-phone" placeholder="Phone number..." />
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="member-email" placeholder="Email..." />
-      </div>
-      <div class="form-group">
-        <label>Role</label>
-        <input type="text" id="member-role" placeholder="e.g. Elder, Deacon, Member..." />
-      </div>
-      <div class="form-group">
-        <label>Birthday</label>
-        <input type="date" id="member-birthday" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Notes</label>
-      <textarea id="member-notes-field" placeholder="Pastoral notes..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('memberModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-member">✅ Add Member</button>
-    </div>
-  </div>
-</div>
+// ──────────────────────────────────────────────────────────────────────────
+//  SAVE TO LOCALSTORAGE
+// ──────────────────────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem('fastingLogs', JSON.stringify(fastingLogs));
+  localStorage.setItem('sleepLogs',   JSON.stringify(sleepLogs));
+  localStorage.setItem('activeFast',  JSON.stringify(activeFast));
+}
 
-<!-- Member Detail Modal -->
-<div class="modal-overlay" id="memberDetailModal">
-  <div class="modal" style="max-width:580px">
-    <div id="member-detail-content"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('memberDetailModal')">Close</button>
-    </div>
-  </div>
-</div>
 
-<!-- Song Modal -->
-<div class="modal-overlay" id="songModal">
-  <div class="modal">
-    <h3>🎵 Add Song</h3>
-    <div class="form-group">
-      <label>Song Title *</label>
-      <input type="text" id="song-title" placeholder="Song title..." />
-    </div>
-    <div class="card-grid">
-      <div class="form-group">
-        <label>Key</label>
-        <select id="song-key">
-          <option>C</option><option>C#</option><option>D</option><option>D#</option>
-          <option>E</option><option>F</option><option>F#</option><option>G</option>
-          <option>G#</option><option>A</option><option>A#</option><option>B</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Tempo / Feel</label>
-        <input type="text" id="song-tempo" placeholder="e.g. Slow, Upbeat..." />
-      </div>
-      <div class="form-group" style="grid-column:1/-1">
-        <label>Theme / Topic</label>
-        <input type="text" id="song-theme" placeholder="e.g. Grace, Worship, Easter..." />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Chord Chart</label>
-      <textarea id="song-chords" placeholder="Chord progression or chart notes..." rows="3"></textarea>
-    </div>
-    <div class="form-group">
-      <label>Lyrics / Notes</label>
-      <textarea id="song-lyrics" placeholder="Song lyrics or notes..." rows="4"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('songModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-song">✅ Add Song</button>
-    </div>
-  </div>
-</div>
+// ──────────────────────────────────────────────────────────────────────────
+//  TAB SWITCHING
+// ──────────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['fasting','sleep'].forEach(t => {
+    document.getElementById('pane-' + t).classList.toggle('hidden', t !== tab);
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'sleep') renderSleepChart();
+}
 
-<!-- Disciple Modal -->
-<div class="modal-overlay" id="discipleModal">
-  <div class="modal">
-    <h3>🌱 Add Discipleship Relationship</h3>
-    <div class="form-group">
-      <label>Name *</label>
-      <input type="text" id="disciple-name" placeholder="Person's name..." />
-    </div>
-    <div class="card-grid">
-      <div class="form-group">
-        <label>Focus Area</label>
-        <input type="text" id="disciple-focus" placeholder="e.g. Prayer, Leadership..." />
-      </div>
-      <div class="form-group">
-        <label>Total Weeks</label>
-        <input type="text" id="disciple-weeks" placeholder="12" value="12" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Notes</label>
-      <textarea id="disciple-notes-field" placeholder="Goals, prayer points, background..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('discipleModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-disciple">✅ Add Relationship</button>
-    </div>
-  </div>
-</div>
 
-<!-- Outreach Modal -->
-<div class="modal-overlay" id="outreachModal">
-  <div class="modal">
-    <h3>📢 Log Outreach Conversation</h3>
-    <div class="form-group">
-      <label>Person's Name *</label>
-      <input type="text" id="outreach-person" placeholder="Name..." />
-    </div>
-    <div class="form-group">
-      <label>Conversation Summary</label>
-      <textarea id="outreach-summary" placeholder="What was shared, how they responded..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>Status</label>
-      <select id="outreach-status">
-        <option>Initial Contact</option>
-        <option>Follow-up Needed</option>
-        <option>Interested</option>
-        <option>Committed to Christ</option>
-        <option>Connected to Church</option>
-        <option>Not Interested</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('outreachModal')">Cancel</button>
-      <button class="btn btn-primary" id="btn-save-outreach">✅ Log Conversation</button>
-    </div>
-  </div>
-</div>
+// ──────────────────────────────────────────────────────────────────────────
+//  FASTING HELPERS
+// ──────────────────────────────────────────────────────────────────────────
 
-<!-- ═══════════════════ TOAST ═══════════════════ -->
-<div id="toast"></div>
+/** Returns target hours based on the selected dropdown value */
+function getFastHours() {
+  const sel = document.getElementById('fast-type').value;
+  if (sel === 'custom') {
+    const h = parseFloat(document.getElementById('custom-hours').value);
+    return isNaN(h) || h <= 0 ? null : h;
+  }
+  if (sel === 'water') return 72;
+  return parseFloat(sel);
+}
 
-<script src="./script.js"></script>
+/** Human-readable label for the current selection */
+function getFastLabel() {
+  const sel = document.getElementById('fast-type');
+  const opt = sel.options[sel.selectedIndex];
+  if (sel.value === 'custom') {
+    const h = document.getElementById('custom-hours').value;
+    return `Custom (${h} hr)`;
+  }
+  return opt.text;
+}
+
+/** Show/hide custom hours input */
+function onFastTypeChange() {
+  const isCustom = document.getElementById('fast-type').value === 'custom';
+  document.getElementById('custom-hours-wrap').classList.toggle('hidden', !isCustom);
+}
+
+/** Format seconds into HH:MM:SS */
+function fmtHMS(totalSec) {
+  if (totalSec < 0) totalSec = 0;
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = Math.floor(totalSec % 60);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+/** Format a timestamp into a readable date/time string */
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' })
+       + ' ' + d.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+}
+
+/** Short date string for table column */
+function fmtDate(ts) {
+  return new Date(ts).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  START / END FAST
+// ──────────────────────────────────────────────────────────────────────────
+function startFast() {
+  if (activeFast) {
+    alert('A fast is already in progress. End it first.');
+    return;
+  }
+  const hours = getFastHours();
+  if (!hours) { alert('Please enter a valid custom duration.'); return; }
+
+  activeFast = {
+    type:      getFastLabel(),
+    hours:     hours,
+    startTime: Date.now(),
+    targetMs:  hours * 3600 * 1000,
+  };
+  save();
+  renderActiveFast();
+}
+
+function endFast() {
+  if (!activeFast) return;
+  const endTime = Date.now();
+  const durationMs = endTime - activeFast.startTime;
+  const durationHrs = parseFloat((durationMs / 3600000).toFixed(2));
+
+  fastingLogs.unshift({
+    id:        Date.now(),
+    date:      fmtDate(activeFast.startTime),
+    type:      activeFast.type,
+    startTime: activeFast.startTime,
+    endTime:   endTime,
+    duration:  durationHrs,
+  });
+
+  activeFast = null;
+  save();
+  stopCountdown();
+  renderActiveFast();
+  renderFastHistory();
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  LIVE COUNTDOWN
+// ──────────────────────────────────────────────────────────────────────────
+function startCountdown() {
+  stopCountdown();
+  countdownInterval = setInterval(tickCountdown, 1000);
+  tickCountdown();
+}
+
+function stopCountdown() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+}
+
+function tickCountdown() {
+  if (!activeFast) { stopCountdown(); return; }
+  const elapsed  = Date.now() - activeFast.startTime;
+  const remaining = activeFast.targetMs - elapsed;
+  const pct = Math.min(100, (elapsed / activeFast.targetMs * 100)).toFixed(0);
+
+  document.getElementById('countdown-display').textContent = fmtHMS(remaining / 1000);
+  document.getElementById('elapsed-display').textContent   = fmtHMS(elapsed / 1000);
+  document.getElementById('fast-progress-text').textContent =
+    remaining > 0
+      ? `${pct}% complete — keep going!`
+      : `✅ Goal reached! You've hit your ${activeFast.hours} hour target.`;
+
+  // Turn timer green/gold when goal is hit
+  const el = document.getElementById('countdown-display');
+  el.style.color = remaining <= 0 ? '#f0b429' : '#22c55e';
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  RENDER ACTIVE FAST CARD
+// ──────────────────────────────────────────────────────────────────────────
+function renderActiveFast() {
+  const card   = document.getElementById('active-fast-card');
+  const btnStart = document.getElementById('btn-start');
+  const btnEnd   = document.getElementById('btn-end');
+  const statusMsg = document.getElementById('fast-status-msg');
+
+  if (activeFast) {
+    card.classList.remove('hidden');
+    btnStart.classList.add('hidden');
+    btnEnd.classList.remove('hidden');
+    document.getElementById('active-fast-type').textContent = activeFast.type;
+    statusMsg.textContent = `Started ${fmtDateTime(activeFast.startTime)} · goal: ${activeFast.hours} hrs`;
+    startCountdown();
+  } else {
+    card.classList.add('hidden');
+    btnStart.classList.remove('hidden');
+    btnEnd.classList.add('hidden');
+    statusMsg.textContent = 'No active fast. Choose a type and press Start.';
+    stopCountdown();
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  RENDER FASTING HISTORY TABLE
+// ──────────────────────────────────────────────────────────────────────────
+function renderFastHistory() {
+  const empty = document.getElementById('fast-history-empty');
+  const wrap  = document.getElementById('fast-history-wrap');
+  const body  = document.getElementById('fast-history-body');
+
+  if (!fastingLogs.length) {
+    empty.classList.remove('hidden');
+    wrap.classList.add('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  wrap.classList.remove('hidden');
+
+  body.innerHTML = fastingLogs.map(log => `
+    <tr>
+      <td class="text-[#8b949e]">${log.date}</td>
+      <td class="text-white">${log.type}</td>
+      <td class="text-[#8b949e] font-mono text-xs">${fmtDateTime(log.startTime)}</td>
+      <td class="text-[#8b949e] font-mono text-xs">${fmtDateTime(log.endTime)}</td>
+      <td class="text-[#22c55e] font-mono">${log.duration}h</td>
+      <td>
+        <button onclick="deleteFastLog(${log.id})"
+          class="text-xs text-red-500 hover:text-red-400 transition-colors px-1">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function deleteFastLog(id) {
+  if (!confirm('Delete this fast log?')) return;
+  fastingLogs = fastingLogs.filter(l => l.id !== id);
+  save();
+  renderFastHistory();
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  SLEEP — STAR RATING
+// ──────────────────────────────────────────────────────────────────────────
+function setStar(val) {
+  sleepQualityVal = val;
+  document.getElementById('sleep-quality').value = val;
+  document.querySelectorAll('#star-row .star').forEach(s => {
+    const v = parseInt(s.dataset.val);
+    s.classList.toggle('filled', v <= val);
+    s.classList.toggle('empty',  v > val);
+  });
+}
+
+function renderStars(val) {
+  if (!val || val === 0) return '—';
+  return '★'.repeat(val) + '☆'.repeat(5 - val);
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  SLEEP — DURATION AUTO-CALC
+// ──────────────────────────────────────────────────────────────────────────
+function calcSleepDuration() {
+  const bed  = document.getElementById('sleep-bedtime').value;
+  const wake = document.getElementById('sleep-waketime').value;
+  const preview = document.getElementById('sleep-duration-preview');
+  const val     = document.getElementById('sleep-duration-val');
+
+  if (!bed || !wake) { preview.classList.add('hidden'); return; }
+
+  const bedMs  = new Date(bed).getTime();
+  const wakeMs = new Date(wake).getTime();
+  if (wakeMs <= bedMs) { preview.classList.add('hidden'); return; }
+
+  const hrs = ((wakeMs - bedMs) / 3600000).toFixed(2);
+  val.textContent = hrs;
+  preview.classList.remove('hidden');
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  SAVE SLEEP LOG
+// ──────────────────────────────────────────────────────────────────────────
+function saveSleep() {
+  const bed  = document.getElementById('sleep-bedtime').value;
+  const wake = document.getElementById('sleep-waketime').value;
+  if (!bed || !wake) { alert('Please fill in both bedtime and wake time.'); return; }
+
+  const bedMs  = new Date(bed).getTime();
+  const wakeMs = new Date(wake).getTime();
+  if (wakeMs <= bedMs) { alert('Wake time must be after bedtime.'); return; }
+
+  const hrs = parseFloat(((wakeMs - bedMs) / 3600000).toFixed(2));
+
+  sleepLogs.unshift({
+    id:       Date.now(),
+    date:     fmtDate(bedMs),
+    bedtime:  bedMs,
+    waketime: wakeMs,
+    duration: hrs,
+    quality:  sleepQualityVal,
+  });
+  save();
+
+  // Reset form
+  document.getElementById('sleep-bedtime').value  = '';
+  document.getElementById('sleep-waketime').value = '';
+  setStar(0);
+  sleepQualityVal = 0;
+  document.getElementById('sleep-duration-preview').classList.add('hidden');
+
+  // Show confirmation
+  const msg = document.getElementById('sleep-save-msg');
+  msg.classList.remove('hidden');
+  setTimeout(() => msg.classList.add('hidden'), 2500);
+
+  renderSleepHistory();
+  renderSleepChart();
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  RENDER SLEEP HISTORY TABLE
+// ──────────────────────────────────────────────────────────────────────────
+function renderSleepHistory() {
+  const empty = document.getElementById('sleep-history-empty');
+  const wrap  = document.getElementById('sleep-history-wrap');
+  const body  = document.getElementById('sleep-history-body');
+
+  if (!sleepLogs.length) {
+    empty.classList.remove('hidden');
+    wrap.classList.add('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  wrap.classList.remove('hidden');
+
+  body.innerHTML = sleepLogs.map(log => `
+    <tr>
+      <td class="text-[#8b949e]">${log.date}</td>
+      <td class="text-[#8b949e] font-mono text-xs">${fmtDateTime(log.bedtime)}</td>
+      <td class="text-[#8b949e] font-mono text-xs">${fmtDateTime(log.waketime)}</td>
+      <td class="text-[#22c55e] font-mono">${log.duration}h</td>
+      <td class="text-[#22c55e] text-xs">${renderStars(log.quality)}</td>
+      <td>
+        <button onclick="deleteSleepLog(${log.id})"
+          class="text-xs text-red-500 hover:text-red-400 transition-colors px-1">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function deleteSleepLog(id) {
+  if (!confirm('Delete this sleep log?')) return;
+  sleepLogs = sleepLogs.filter(l => l.id !== id);
+  save();
+  renderSleepHistory();
+  renderSleepChart();
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  SLEEP CHART (Chart.js)
+// ──────────────────────────────────────────────────────────────────────────
+function renderSleepChart() {
+  const canvas   = document.getElementById('sleep-chart');
+  const emptyMsg = document.getElementById('chart-empty');
+
+  // Get last 30 days of sleep logs, sorted chronologically
+  const cutoff = Date.now() - 30 * 24 * 3600 * 1000;
+  const recent = [...sleepLogs]
+    .filter(l => l.bedtime >= cutoff)
+    .sort((a, b) => a.bedtime - b.bedtime);
+
+  if (recent.length < 2) {
+    canvas.classList.add('hidden');
+    emptyMsg.classList.remove('hidden');
+    return;
+  }
+  canvas.classList.remove('hidden');
+  emptyMsg.classList.add('hidden');
+
+  const labels = recent.map(l => new Date(l.bedtime).toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+  const data   = recent.map(l => l.duration);
+
+  // Destroy previous chart instance to avoid canvas reuse error
+  if (sleepChart) { sleepChart.destroy(); sleepChart = null; }
+
+  sleepChart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Hours slept',
+        data,
+        borderColor:     '#22c55e',
+        backgroundColor: 'rgba(34,197,94,0.08)',
+        pointBackgroundColor: '#22c55e',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.35,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161b22',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#8b949e',
+          bodyColor: '#22c55e',
+          callbacks: { label: ctx => ` ${ctx.parsed.y} hrs` }
+        }
+      },
+      scales: {
+        x: {
+          grid:  { color: '#21262d' },
+          ticks: { color: '#8b949e', font: { size: 11 } }
+        },
+        y: {
+          min: 0,
+          grid:  { color: '#21262d' },
+          ticks: { color: '#8b949e', font: { size: 11 }, callback: v => v + 'h' }
+        }
+      }
+    }
+  });
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  EXPORT / IMPORT / CLEAR
+// ──────────────────────────────────────────────────────────────────────────
+function exportData() {
+  const payload = { fastingLogs, sleepLogs, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'fastrest-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  if (!confirm('Import this file? This will REPLACE your current data.')) {
+    evt.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!Array.isArray(parsed.fastingLogs) || !Array.isArray(parsed.sleepLogs)) {
+        throw new Error('Invalid file format');
+      }
+      fastingLogs = parsed.fastingLogs;
+      sleepLogs   = parsed.sleepLogs;
+      save();
+      renderFastHistory();
+      renderSleepHistory();
+      renderSleepChart();
+      alert('✅ Data imported successfully!');
+    } catch(err) {
+      alert('❌ Could not parse file: ' + err.message);
+    }
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('⚠️ This will permanently delete ALL fasting and sleep logs. Are you sure?')) return;
+  if (!confirm('Last chance — clear everything?')) return;
+  fastingLogs = [];
+  sleepLogs   = [];
+  activeFast  = null;
+  save();
+  stopCountdown();
+  renderActiveFast();
+  renderFastHistory();
+  renderSleepHistory();
+  renderSleepChart();
+  alert('All data cleared.');
+}
+
+
+// ──────────────────────────────────────────────────────────────────────────
+//  INIT — run on page load
+// ──────────────────────────────────────────────────────────────────────────
+(function init() {
+  // Restore all UI state from localStorage
+  renderActiveFast();
+  renderFastHistory();
+  renderSleepHistory();
+  // Set friendly default status message
+  if (!activeFast) {
+    document.getElementById('fast-status-msg').textContent = 'No active fast. Choose a type and press Start.';
+  }
+})();
+</script>
+
 </body>
 </html>
