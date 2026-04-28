@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════╗
+  ║         FULL MINISTRY OS — Pastoral Dashboard        ║
+  ╠══════════════════════════════════════════════════════╣
+  ║  HOW TO USE:                                         ║
+  ║  1. Place all files (index.html, style.css,          ║
+  ║     script.js, manifest.json, sw.js, bible.json)     ║
+  ║     in the SAME folder.                              ║
+  ║  2. Open via a local server (not file://) for PWA:   ║
+  ║     → npx serve .  OR  python -m http.server 8080    ║
+  ║  3. Visit http://localhost:8080 in Chrome/Safari      ║
+  ║  4. To install: click the Install button or use      ║
+  ║     browser's "Add to Home Screen" option.           ║
+  ║  5. Export your data regularly from Settings!        ║
+  ║                                                      ║
+  ║  TO EXPAND THE BIBLE: Add more books/chapters to     ║
+  ║  bible.json following the existing format.           ║
+  ╚══════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e3a5f" />
+  <meta name="description" content="Full Ministry OS — Offline-first pastoral dashboard" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Full Ministry OS</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <h1>✝ Ministry OS</h1>
+    <p>Pastoral Dashboard</p>
+  </div>
+  <nav>
+    <div class="nav-item active" data-section="dashboard"><span class="icon">🏠</span> Dashboard</div>
+    <div class="nav-item" data-section="bible"><span class="icon">📖</span> Bible Study</div>
+    <div class="nav-item" data-section="sermon"><span class="icon">🎙️</span> Sermon Builder</div>
+    <div class="nav-item" data-section="prayer"><span class="icon">🙏</span> Prayer Journal</div>
+    <div class="nav-item" data-section="care"><span class="icon">🐑</span> Shepherd's Care</div>
+    <div class="nav-item" data-section="worship"><span class="icon">🎵</span> Worship</div>
+    <div class="nav-item" data-section="discipleship"><span class="icon">🌱</span> Discipleship</div>
+    <div class="nav-item" data-section="notes"><span class="icon">📝</span> Notes</div>
+    <div class="nav-item" data-section="settings"><span class="icon">⚙️</span> Settings</div>
+  </nav>
+  <div id="sidebar-footer">Full Ministry OS v1.0<br>All data stored locally</div>
+</aside>
+
+<!-- ═══════════════════ MOBILE OVERLAY ═══════════════════ -->
+<div id="mobile-overlay"></div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main id="main">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button id="hamburger">☰</button>
+      <h2 id="topbar-title">🏠 Dashboard</h2>
+    </div>
+    <div id="topbar-actions">
+      <button id="installBtn" class="btn btn-gold btn-sm" style="display:none">📲 Install App</button>
+    </div>
+  </div>
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <section class="section active" id="sec-dashboard">
+    <div class="dash-verse">
+      <div class="verse-date" id="dash-date"></div>
+      <div class="verse-text" id="dash-verse-text"></div>
+      <div class="verse-ref" id="dash-verse-ref"></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card" data-section="sermon">
+        <div class="stat-num" id="stat-sermons">0</div>
+        <div class="stat-label">Sermons</div>
+      </div>
+      <div class="stat-card" data-section="prayer" style="border-top-color:#c9a84c">
+        <div class="stat-num" id="stat-prayers">0</div>
+        <div class="stat-label">Open Prayers</div>
+      </div>
+      <div class="stat-card" data-section="care" style="border-top-color:#27ae60">
+        <div class="stat-num" id="stat-members">0</div>
+        <div class="stat-label">Members</div>
+      </div>
+      <div class="stat-card" data-section="discipleship" style="border-top-color:#8e44ad">
+        <div class="stat-num" id="stat-disciples">0</div>
+        <div class="stat-label">Disciples</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ Quick Access</div>
+      <div class="quicklinks">
+        <div class="quicklink" data-section="bible"><span class="ql-icon">📖</span><span class="ql-label">Bible</span></div>
+        <div class="quicklink" data-section="sermon"><span class="ql-icon">🎙️</span><span class="ql-label">Sermon</span></div>
+        <div class="quicklink" data-section="prayer"><span class="ql-icon">🙏</span><span class="ql-label">Prayer</span></div>
+        <div class="quicklink" data-section="care"><span class="ql-icon">🐑</span><span class="ql-label">Members</span></div>
+        <div class="quicklink" data-section="worship"><span class="ql-icon">🎵</span><span class="ql-label">Worship</span></div>
+        <div class="quicklink" data-section="discipleship"><span class="ql-icon">🌱</span><span class="ql-label">Disciples</span></div>
+        <div class="quicklink" data-section="notes"><span class="ql-icon">📝</span><span class="ql-label">Notes</span></div>
+        <div class="quicklink" data-section="settings"><span class="ql-icon">⚙️</span><span class="ql-label">Settings</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ BIBLE STUDY ══════════ -->
+  <section class="section" id="sec-bible">
+    <div class="card">
+      <div class="bible-controls">
+        <select id="bible-book"></select>
+        <select id="bible-chapter"></select>
+        <input type="search" id="bible-search" placeholder="Search scripture..." style="flex:2;min-width:160px" />
+        <button class="btn btn-primary" id="bible-search-btn">Search</button>
+      </div>
+      <div id="bible-verse-actions" style="display:none;gap:8px;margin-bottom:12px">
+        <button class="btn btn-gold btn-sm" id="btn-highlight">✨ Highlight</button>
+        <button class="btn btn-primary btn-sm" id="btn-verse-note">📝 Note</button>
+      </div>
+      <div class="bible-reader" id="bible-reader"></div>
+      <div id="search-results" class="search-results"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 30-Day Reading Tracker</div>
+      <p class="text-muted text-sm mb-16">Tap a day to mark it complete. Today has a gold border.</p>
+      <div class="reading-grid" id="reading-grid"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ SERMON BUILDER ══════════ -->
+  <section class="section" id="sec-sermon">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="font-size:1rem;font-weight:700">My Sermons</h3>
+        <p class="text-muted text-sm">Click any sermon to edit the outline</p>
+      </div>
+      <button class="btn btn-primary" id="btn-new-sermon">+ New Sermon</button>
+    </div>
+    <div id="sermon-list"></div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">⏱️ Preaching Timer</div>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:14px">
+        <button class="btn btn-primary" id="btn-timer-start">▶ Start</button>
+        <button class="btn btn-ghost" id="btn-timer-reset">↺ Reset</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ PRAYER JOURNAL ══════════ -->
+  <section class="section" id="sec-prayer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:1rem;font-weight:700">Prayer Journal</h3>
+      <button class="btn btn-primary" id="btn-new-prayer">+ New Prayer</button>
+    </div>
+    <div class="prayer-categories">
+      <div class="cat-badge active" data-cat="All">All</div>
+      <div class="cat-badge" data-cat="Personal">Personal</div>
+      <div class="cat-badge" data-cat="Congregation">Congregation</div>
+      <div class="cat-badge" data-cat="Family">Family</div>
+      <div class="cat-badge" data-cat="Mission">Mission</div>
+      <div class="cat-badge" data-cat="Answered">✓ Answered</div>
+    </div>
+    <div id="prayer-list"></div>
+
+    <div class="card">
+      <div class="card-title">🌟 Gratitude Log</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="gratitude-input" placeholder="What are you thankful for today?" style="flex:1" />
+        <button class="btn btn-gold" id="btn-add-gratitude">Add</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ SHEPHERD'S CARE ══════════ -->
+  <section class="section" id="sec-care">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:1rem;font-weight:700">Member Directory</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" id="btn-import-csv">📥 CSV Import</button>
+        <input type="file" id="csv-input" accept=".csv" style="display:none" />
+        <button class="btn btn-primary" id="btn-new-member">+ Add Member</button>
+      </div>
+    </div>
+    <input type="search" id="member-search" placeholder="Search members..." class="mb-16" />
+    <div class="member-grid" id="member-grid"></div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">📋 Recent Visits</div>
+      <div id="visit-log"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ WORSHIP ══════════ -->
+  <section class="section" id="sec-worship">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:1rem;font-weight:700">Song Library</h3>
+      <button class="btn btn-primary" id="btn-new-song">+ Add Song</button>
+    </div>
+    <div id="song-library" style="margin-bottom:20px"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin-bottom:0">🎼 Current Setlist</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-gold btn-sm" id="btn-save-setlist">💾 Save</button>
+          <button class="btn btn-ghost btn-sm" id="btn-clear-setlist">Clear</button>
+        </div>
+      </div>
+      <div id="current-setlist"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ DISCIPLESHIP ══════════ -->
+  <section class="section" id="sec-discipleship">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:1rem;font-weight:700">One-on-One Discipleship</h3>
+      <button class="btn btn-primary" id="btn-new-disciple">+ Add Relationship</button>
+    </div>
+    <div id="disciple-list" style="margin-bottom:20px"></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="card-title" style="margin-bottom:0">📢 Outreach Log</div>
+        <button class="btn btn-primary btn-sm" id="btn-log-outreach">+ Log Conversation</button>
+      </div>
+      <div id="outreach-log"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ NOTES ══════════ -->
+  <section class="section" id="sec-notes">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h3 style="font-size:1rem;font-weight:700">Knowledge Base</h3>
+      <button class="btn btn-primary" id="btn-new-note">+ New Note</button>
+    </div>
+    <input type="search" id="note-search" placeholder="Search notes..." class="mb-16" />
+    <div class="notes-layout">
+      <div class="notes-sidebar" id="note-list"></div>
+      <div class="notes-editor" id="note-editor-area" style="display:none">
+        <input type="text" id="note-title-input" placeholder="Note title..." style="font-size:1.1rem;font-weight:700" />
+        <input type="text" id="note-tag-input" placeholder="Tag (e.g. sermon, prayer, scripture)..." />
+        <textarea id="note-body" placeholder="Start writing your note..."></textarea>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-danger btn-sm" id="btn-delete-note">🗑 Delete</button>
+          <button class="btn btn-primary" id="btn-save-note">💾 Save</button>
+        </div>
+      </div>
+      <div id="note-empty-msg" style="display:flex;align-items:center;justify-content:center;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--text2);font-size:0.9rem;text-align:center;padding:40px">
+        Select a note or create a new one
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ SETTINGS ══════════ -->
+  <section class="section" id="sec-settings">
+    <div class="disclaimer-box">
+      <strong>⚠️ Data Storage Notice</strong><br>
+      All data is stored locally in your browser only. Export your data regularly to a safe location.
+      This app does not use cloud storage or backups. You are responsible for keeping your own backups.
+      Importing a file will replace all current data.
+    </div>
+
+    <div class="card">
+      <div class="card-title">📤 Data Management</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="btn btn-primary" id="btn-export">⬇ Export All Data</button>
+        <button class="btn btn-gold" id="btn-import">⬆ Import Backup</button>
+        <input type="file" id="import-input" accept=".json" style="display:none" />
+      </div>
+      <p class="text-sm text-muted">Export downloads a JSON file with all your sermons, prayers, members, notes, and settings.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎨 Appearance</div>
+      <div class="toggle-row">
+        <span>Dark Mode</span>
+        <label class="toggle">
+          <input type="checkbox" id="darkToggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📲 Install App</div>
+      <p class="text-sm text-muted mb-16">Install Ministry OS on your device for offline access and a native app experience.</p>
+      <button class="btn btn-gold" id="installBtn2" onclick="document.getElementById('installBtn').click()">📲 Install to Device</button>
+    </div>
+
+    <div class="card" style="border:1px solid rgba(192,57,43,0.3)">
+      <div class="card-title" style="color:var(--danger)">⚠️ Danger Zone</div>
+      <p class="text-sm text-muted mb-16">Permanently delete all data. This cannot be undone. Export first!</p>
+      <button class="btn btn-danger" id="btn-reset">🗑 Reset All Data</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- Welcome / Disclaimer -->
+<div class="modal-overlay" id="welcomeModal">
+  <div class="modal">
+    <h3>✝ Welcome to Full Ministry OS</h3>
+    <p style="font-size:0.9rem;line-height:1.7;margin-bottom:14px">Your complete offline-first pastoral dashboard — Bible study, sermon building, prayer tracking, member care, worship planning, and more — all in one place.</p>
+    <div class="disclaimer-box">
+      <strong>⚠️ Important:</strong> All data is stored locally in your browser only. Export your data regularly to a safe location. This app does not use cloud storage or backups. You are responsible for keeping your own backups. Importing a file will replace all current data.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal('welcomeModal')">Get Started ✝</button>
+    </div>
+  </div>
+</div>
+
+<!-- Verse Note -->
+<div class="modal-overlay" id="verseNoteModal">
+  <div class="modal">
+    <h3>📝 Verse Note — <span id="vn-ref"></span></h3>
+    <div class="form-group">
+      <textarea id="vn-text" placeholder="Your thoughts on this verse..." rows="6"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('verseNoteModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-vn">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sermon Modal -->
+<div class="modal-overlay" id="sermonModal">
+  <div class="modal" style="max-width:680px">
+    <h3>🎙️ Sermon Editor</h3>
+    <div class="card-grid">
+      <div class="form-group">
+        <label>Title *</label>
+        <input type="text" id="sermon-form-title" placeholder="Sermon title..." />
+      </div>
+      <div class="form-group">
+        <label>Series</label>
+        <input type="text" id="sermon-form-series" placeholder="Series name..." />
+      </div>
+      <div class="form-group">
+        <label>Scripture</label>
+        <input type="text" id="sermon-form-scripture" placeholder="e.g. John 3:16" />
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="sermon-form-date" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Manuscript / Notes</label>
+      <textarea id="sermon-form-notes" placeholder="Full sermon text or notes..." rows="4"></textarea>
+    </div>
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <label style="font-size:0.82rem;font-weight:600;color:var(--text2)">Outline</label>
+      <button class="btn btn-ghost btn-sm" id="btn-add-outline">+ Add Point</button>
+    </div>
+    <div id="sermon-outline-items" style="min-height:60px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('sermonModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-sermon">💾 Save Sermon</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prayer Modal -->
+<div class="modal-overlay" id="prayerModal">
+  <div class="modal">
+    <h3>🙏 Add Prayer Request</h3>
+    <div class="form-group">
+      <label>Title / Name *</label>
+      <input type="text" id="prayer-title" placeholder="Person or topic..." />
+    </div>
+    <div class="form-group">
+      <label>Request</label>
+      <textarea id="prayer-request" placeholder="Details of the prayer request..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="prayer-category">
+        <option>Personal</option>
+        <option>Congregation</option>
+        <option>Family</option>
+        <option>Mission</option>
+        <option>Leadership</option>
+        <option>Healing</option>
+        <option>Finance</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Follow-up Date</label>
+      <input type="date" id="prayer-followup" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('prayerModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-prayer">🙏 Add Prayer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Member Modal -->
+<div class="modal-overlay" id="memberModal">
+  <div class="modal">
+    <h3>🐑 Add Member</h3>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="member-name" placeholder="Full name..." />
+    </div>
+    <div class="card-grid">
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="text" id="member-phone" placeholder="Phone number..." />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="member-email" placeholder="Email..." />
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <input type="text" id="member-role" placeholder="e.g. Elder, Deacon, Member..." />
+      </div>
+      <div class="form-group">
+        <label>Birthday</label>
+        <input type="date" id="member-birthday" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="member-notes-field" placeholder="Pastoral notes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('memberModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-member">✅ Add Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- Member Detail Modal -->
+<div class="modal-overlay" id="memberDetailModal">
+  <div class="modal" style="max-width:580px">
+    <div id="member-detail-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('memberDetailModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Song Modal -->
+<div class="modal-overlay" id="songModal">
+  <div class="modal">
+    <h3>🎵 Add Song</h3>
+    <div class="form-group">
+      <label>Song Title *</label>
+      <input type="text" id="song-title" placeholder="Song title..." />
+    </div>
+    <div class="card-grid">
+      <div class="form-group">
+        <label>Key</label>
+        <select id="song-key">
+          <option>C</option><option>C#</option><option>D</option><option>D#</option>
+          <option>E</option><option>F</option><option>F#</option><option>G</option>
+          <option>G#</option><option>A</option><option>A#</option><option>B</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tempo / Feel</label>
+        <input type="text" id="song-tempo" placeholder="e.g. Slow, Upbeat..." />
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Theme / Topic</label>
+        <input type="text" id="song-theme" placeholder="e.g. Grace, Worship, Easter..." />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Chord Chart</label>
+      <textarea id="song-chords" placeholder="Chord progression or chart notes..." rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Lyrics / Notes</label>
+      <textarea id="song-lyrics" placeholder="Song lyrics or notes..." rows="4"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('songModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-song">✅ Add Song</button>
+    </div>
+  </div>
+</div>
+
+<!-- Disciple Modal -->
+<div class="modal-overlay" id="discipleModal">
+  <div class="modal">
+    <h3>🌱 Add Discipleship Relationship</h3>
+    <div class="form-group">
+      <label>Name *</label>
+      <input type="text" id="disciple-name" placeholder="Person's name..." />
+    </div>
+    <div class="card-grid">
+      <div class="form-group">
+        <label>Focus Area</label>
+        <input type="text" id="disciple-focus" placeholder="e.g. Prayer, Leadership..." />
+      </div>
+      <div class="form-group">
+        <label>Total Weeks</label>
+        <input type="text" id="disciple-weeks" placeholder="12" value="12" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="disciple-notes-field" placeholder="Goals, prayer points, background..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('discipleModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-disciple">✅ Add Relationship</button>
+    </div>
+  </div>
+</div>
+
+<!-- Outreach Modal -->
+<div class="modal-overlay" id="outreachModal">
+  <div class="modal">
+    <h3>📢 Log Outreach Conversation</h3>
+    <div class="form-group">
+      <label>Person's Name *</label>
+      <input type="text" id="outreach-person" placeholder="Name..." />
+    </div>
+    <div class="form-group">
+      <label>Conversation Summary</label>
+      <textarea id="outreach-summary" placeholder="What was shared, how they responded..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="outreach-status">
+        <option>Initial Contact</option>
+        <option>Follow-up Needed</option>
+        <option>Interested</option>
+        <option>Committed to Christ</option>
+        <option>Connected to Church</option>
+        <option>Not Interested</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('outreachModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-outreach">✅ Log Conversation</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOAST ═══════════════════ -->
+<div id="toast"></div>
+
+<script src="./script.js"></script>
+</body>
+</html>
